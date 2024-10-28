@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+kubernetes
+openai
+pydantic
+requests
