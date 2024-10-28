@@ -13,3 +13,18 @@ Instructions coming soon.
 
 ## Usage
 Documentation coming soon.
+
+## Changelog
+
+### [Unreleased]
+#### Added
+- FastAPI application structure
+- Kubernetes client configuration
+- OpenAI integration setup
+- Updated logging configuration
+- Format for queries and responses
+
+#### TODO
+- Implement query processing using GPT-4
+- Add query handling and response generation
+- Complete server configuration in `main`
