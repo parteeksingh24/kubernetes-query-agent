@@ -5,8 +5,8 @@ An AI agent that **answers queries about applications deployed on a Kubernetes c
 ## Overview
 This agent provides a REST API endpoint that processes queries about Kubernetes cluster state and returns simplified answers. It does so by performing the following tasks:
 
-1. Leverage the natural language processing (NLP) capabilities of GPT-4o-mini to understand the intent of user queries.
-2. Extract the relevant information from a Kubernetes cluster using the Kubernetes API.
+1. Processes natural language queries using GPT-4o-mini to classify and understand user intent.
+2. Based on the information extracted by the model, returns the (simplified) relevant info. from a Kubernetes cluster using the Kubernetes API.
 
 As a result, the *Kubernetes Query Agent* performs **read-only** actions on the Kubernetes cluster.
 
@@ -23,12 +23,15 @@ Documentation coming soon.
 
 ### [Unreleased]
 #### Added
-- Removed async support to simplify the code.
-- Modern use of OpenAI API based on recent documentation.
-- Switched to GPT-4o-mini model for faster, cost-effective query processing.
-- Improved system prompt following prompt engineering best practices.
+- Load OpenAI API key using `load_dotenv` and an `.env` file.
+- Fixed error that initialized Kubernetes API clients to `None` throughout the script.
+- Name simplification function (`simplify_name`) to remove hash suffixes from Kubernetes resource names.
+- Updated query processing model to **not** simplify names by removing hash suffixes (now done by `get_kubernetes_info`).
+- Helper function (`get_kubernetes_info`) to retrieve information based on the classified query.
+- Query processing and response generation (including error checking and handling).
+- Server startup configuration in `main`.
 
 #### TODO
-- Add a helper function (`get_kubernetes_info`) to retrieve information based on the classified query.
-- Handle query processing and return appropriate responses (including error checking and handling).
-- Complete server startup configuration in `main`.
+- Add input validation and expand error handling.
+- Extend functionality beyond the current query classifications (*if needed*).
+- Add setup instructions and usage documentation.
