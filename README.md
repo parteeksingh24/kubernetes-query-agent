@@ -23,15 +23,12 @@ Documentation coming soon.
 
 ### [Unreleased]
 #### Added
-- Load OpenAI API key using `load_dotenv` and an `.env` file.
-- Fixed error that initialized Kubernetes API clients to `None` throughout the script.
-- Name simplification function (`simplify_name`) to remove hash suffixes from Kubernetes resource names.
-- Updated query processing model to **not** simplify names by removing hash suffixes (now done by `get_kubernetes_info`).
-- Helper function (`get_kubernetes_info`) to retrieve information based on the classified query.
-- Query processing and response generation (including error checking and handling).
-- Server startup configuration in `main`.
+- Consolidated API (Kubernetes, OpenAI) client initialization
+- Updated `simplify_name` to handle more Kubernetes resource names
+- Added health check endpoint (`/health`)
+- Fixed server startup (e.g., command-line port configuration)
 
 #### TODO
-- Add input validation and expand error handling.
-- Extend functionality beyond the current query classifications (*if needed*).
+- Expand error handling.
 - Add setup instructions and usage documentation.
+- Extend functionality beyond the current query classifications (*if needed*).

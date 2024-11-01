@@ -6,12 +6,6 @@ deployed on a Kubernetes cluster.
 
 This script implements the core API endpoint and service structure.
 """
-
-
-# TODO: extend the agent beyond just a few classifications?
-#       (maybe just add "service status"?)
-
-
 import os
 import logging
 import json
@@ -38,7 +32,7 @@ load_dotenv()
 app = FastAPI()
 
 # Kubernetes API clients (initialized in `load_kubernetes_config`)
-# (type hints ensure Kubernetes API functions are visible)
+# (type hints ensure API functions are visible)
 core_v1_api: client.CoreV1Api
 apps_v1_api: client.AppsV1Api
 
@@ -51,7 +45,7 @@ class QueryResponse(BaseModel):
     query: str
     answer: str
 
-# Helper functions:
+# Helper function to retrieve the OpenAI API key:
 def get_openai_key() -> str:
     """
     Get OpenAI API key from environment variable.
@@ -64,6 +58,7 @@ def get_openai_key() -> str:
         raise EnvironmentError(error_msg)
     return key
 
+# Helper function to load Kubernetes configuration:
 def load_kubernetes_config() -> bool:
     """
     Load Kubernetes configuration from the default location (~/.kube/config).
@@ -90,45 +85,71 @@ def load_kubernetes_config() -> bool:
     except Exception as e:
         logging.error(f"Failed to load Kubernetes config: {e}")
         return False
-    
+
+# Function to initialize OpenAI and Kubernetes clients:
+def initialize_clients():
+    """
+    Initialize OpenAI and Kubernetes clients.
+    """
+    global openai_client, core_v1_api, apps_v1_api
+
+    # Initialize OpenAI client
+    try:
+        openai_client = OpenAI(api_key=get_openai_key())
+        logging.info("Successfully initialized OpenAI client")
+    except Exception as e:
+        logging.error(f"Failed to initialize OpenAI client: {e}")
+        raise SystemExit("Failed to initialize OpenAI client")
+
+    # Initialize Kubernetes configuration
+    if not load_kubernetes_config():
+        raise SystemExit("Failed to initialize Kubernetes configuration")
+
+# Perform client initialization before serving requests
+initialize_clients()
+
+# Helper function to simplify Kubernetes resource names:
 def simplify_name(full_name: str) -> str:
     """
-    Simplify Kubernetes information by removing hash suffixes while preserving the core name.
+    Simplifies a Kubernetes resource name by removing hash-like suffixes.
     
+    Following Kubernetes naming conventions, this function identifies and removes
+    hash suffixes that are commonly added to resource names (like ReplicaSets
+    and Pods). These hashes are typically 5-10 characters long and contain at
+    least one digit.
+    
+    Args:
+        `full_name`: The complete Kubernetes resource name
+        
+    Returns:
+        The simplified name with hash suffixes removed
+        
     Examples:
-        'mongodb-56c598c8fc' -> 'mongodb'.
-
-        'my-deployment-577d9fbfb9-z8246' -> 'my-deployment'.
-
-        'example-pod' -> 'example-pod'.
+        - 'nginx-deployment-5959b5b5c9-fdtrb' -> 'nginx-deployment'
+        - 'example-pod' -> 'example-pod'
+        - 'mongodb-56c598c8fc' -> 'mongodb'
+        - 'my-deployment-577d9fbfb9-z8246' -> 'my-deployment'
     """
-    # Split incoming name by hyphen
+    # Constants defining typical hash suffix lengths
+    MIN_HASH_LENGTH = 5
+    MAX_HASH_LENGTH = 10
+    
+    # Split resource name into parts (using hyphens as delimiter)
     parts = full_name.split('-')
-    
-    # Define possible hash lengths (based on Kubernetes API)
-    HASH_LENGTHS = {5, 10} # For DaemonSet and ReplicaSet (deployment)
-    
-    # Continuously remove suffixes that match hash patterns
-    while parts:
-        last_part = parts[-1]
-        if len(last_part) in HASH_LENGTHS and last_part.isalnum():
-            parts.pop()
-        else:
-            break # Only valid `parts` of the name remain
-    
-    simplified_name = '-'.join(parts)
-    
-    # Ensure that if all parts were removed, we just return the original name
-    return simplified_name if simplified_name else full_name
+    simplified = []
 
-# After app initialization, initialize OpenAI client (only done once):
-try:
-    openai_client = OpenAI(api_key=get_openai_key())
-    logging.info("Successfully initialized OpenAI client")
-except Exception as e:
-    # Terminate the program on failure
-    logging.error(f"Failed to initialize OpenAI client: {e}")
-    raise SystemExit("Failed to initialize OpenAI client")
+    for part in parts:
+        # Stop if the part matches hash pattern (5-10 chars, contains digit)
+        is_hash = (MIN_HASH_LENGTH <= len(part) <= MAX_HASH_LENGTH and 
+                  any(char.isdigit() for char in part))
+        
+        if is_hash:
+            break
+    
+        simplified.append(part)
+
+    # Join the valid (non-hash) segments for the simplified name
+    return '-'.join(simplified)
 
 # Use AI agent to extract info. (utilizing NLP) from a query:
 def classify_query(query: str) -> dict:
@@ -136,7 +157,6 @@ def classify_query(query: str) -> dict:
     Use GPT-4o-mini to classify the `query` type and extract relevant parameters.
     """
     # System prompt to guide the AI agent/assistant
-    # TODO: add more classifications?
     system_prompt = """
     You are a Kubernetes query classification assistant that categorizes queries and extracts parameters. 
     Please follow the given instructions carefully, making sure to think through each major step before proceeding.
@@ -204,7 +224,6 @@ def classify_query(query: str) -> dict:
         }
     }
     """
-    
     try:
         logging.debug(f"Sending query to GPT-4o-mini: {query}")
 
@@ -296,7 +315,12 @@ def get_kubernetes_info(query_type: str, parameters: dict) -> str:
         logging.error(f"Error processing query: {e}")
         raise
 
-# API (POST) endpoint (to process queries, return responses)
+# Health check endpoint: verify FastAPI is running
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
+
+# API (POST) endpoint (to process queries, return responses):
 #   (includes validation and error handling for both request and response)
 @app.post("/query", response_model=QueryResponse)
 def process_query(request: QueryRequest):
@@ -335,13 +359,31 @@ def process_query(request: QueryRequest):
         logging.error(f"Error processing query: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-# Initialize Kubernetes configuration
-if not load_kubernetes_config():
-    raise SystemExit("Failed to initialize Kubernetes configuration")
-
 # Main entry point
 if __name__ == "__main__":
-    # Start the server using provided URL, port
+    import sys
     import uvicorn
+    
+    # Configure logging
     logging.info("Starting server...")
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    
+    # Get port from command line args or use default
+    port = 8000
+    if len(sys.argv) > 1:
+        try:
+            port = int(sys.argv[1])
+        except ValueError:
+            logging.error(f"Invalid port number: {sys.argv[1]}")
+            sys.exit(1)
+    
+    # Start server
+    try:
+        uvicorn.run(
+            "main:app",  # Use string reference to app
+            host="127.0.0.1",
+            port=port,
+            log_level="info"
+        )
+    except Exception as e:
+        logging.error(f"Failed to start server: {e}")
+        sys.exit(1)
