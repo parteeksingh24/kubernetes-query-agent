@@ -23,12 +23,10 @@ Documentation coming soon.
 
 ### [Unreleased]
 #### Added
-- Consolidated API (Kubernetes, OpenAI) client initialization
-- Updated `simplify_name` to handle more Kubernetes resource names
-- Added health check endpoint (`/health`)
-- Fixed server startup (e.g., command-line port configuration)
+- Refactored code to a more modular approach (e.g., utilities functions, client initialization).
+- Extended query classification from 4 types to 14 types, covering a wider range of potential queries.
+- Restructured query handling logic to use class-based approach.
 
 #### TODO
-- Expand error handling.
+- Expand error handling (e.g., missing parameters, Kubernetes API failures).
 - Add setup instructions and usage documentation.
-- Extend functionality beyond the current query classifications (*if needed*).
