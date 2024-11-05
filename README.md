@@ -21,31 +21,30 @@ Developed as part of the *Cleric Query Agent Assignment*, this Python-based appl
 ### How It Works
 
 The Query Agent follows a three-step process, done in succession to process user queries:
-1. GPT-4o-mini performs **query classification** by determining the *query type* (one of 14 accepted queries) and *extracting parameters* related to that query type.
+1. GPT-4o-mini performs **query classification** by determining the *query type* (one of 14 accepted queries) and **extracts parameters** related to that query.
     - For example, if a user asks about the status of `example-pod`, the main extracted parameter would be `pod_name=example-pod`.
-    - The model helps determine the query type (*What is being asked?*) and the associated parameters for that query (*What information do I need to use to talk to the API?*).
-2. Using the query type and corresponding parameters, the application calls the applicable Kubernetes API function to retrieve the desired cluster information.
-3. Finally, the application returns a *simplified* version of the API output for easier interpretability.
-    - For example, the step would simplify `my-deployment-56c598c8fc` to `my-deployment`, with hash suffixes removed.
+2. Using the query type and corresponding parameters, the application calls the corresponding Kubernetes API function to retrieve the desired information.
+3. Finally, the application returns a *simplified* version of the API output.
+    - For example, this step would simplify `my-deployment-56c598c8fc` to `my-deployment`, with hash suffixes removed.
 
 As a result, the *Kubernetes Query Agent* performs **read-only** actions on the Kubernetes cluster.
 
 ## Features
 
-- **Query Classification**: The agent uses NLP to classify user queries into predefined types, such as "count_pods", "pod_status", "count_nodes", etc.
-- **Kubernetes Integration**: The agent interacts with the Kubernetes API to fetch information about deployed resources, including pods, deployments, services, and nodes.
-- **Error Handling**: The agent provides clear and informative error messages for various types of errors, including validation errors, Kubernetes API errors, and unexpected exceptions.
-- **Logging**: The agent logs important events, including incoming queries, classification results, and API responses, to the `agent.log` file for debugging and monitoring purposes.
+- *Query Classification*: The agent uses NLP to classify user queries into predefined types, such as "count_pods", "pod_status", "count_nodes", etc.
+- *Kubernetes Integration*: The agent interacts with the Kubernetes API to fetch information about deployed resources, including pods, deployments, services, and nodes.
+- *Error Handling*: The agent provides clear error messages for various types of errors, including validation errors, Kubernetes API errors, and unexpected exceptions.
+- *Logging*: The agent logs important events, including incoming queries, classification results, and API responses, to the `agent.log` file for debugging and monitoring purposes.
 
 ## Architecture
 
 ### Key Components
 
-1. **FastAPI Application** (`main.py`): The main entry point of the application, handling incoming HTTP requests and responses.
-2. **Query Classifier** (`utils.py`): Responsible for analyzing user queries and classifying them into predefined types using natural language processing.
-3. **Kubernetes Client** (`clients.py`): Provides a wrapper around the Kubernetes Python client, allowing the agent to interact with the Kubernetes API.
-4. **Query Handlers** (`handlers.py`): Implement the logic to fetch and process information from the Kubernetes cluster for each query type.
-5. **Utilities** (`utils.py`): Helper functions for tasks such as Kubernetes resource name simplification and returning Kubernetes cluster information.
+1. FastAPI Application (`main.py`): The main entry point of the application, handling incoming HTTP requests and responses.
+2. Query Classifier (`utils.py`): Responsible for analyzing user queries and classifying them into predefined types using natural language processing.
+3. Kubernetes Client (`clients.py`): Provides a wrapper around the Kubernetes Python client, allowing the agent to interact with the Kubernetes API.
+4. Query Handlers (`handlers.py`): Implement the logic to fetch and process information from the Kubernetes cluster for each query type.
+5. Utilities (`utils.py`): Helper functions for tasks such as Kubernetes resource name simplification and returning Kubernetes cluster information.
 
 ### Scope of Queries
 
@@ -170,7 +169,6 @@ Use `kubectl` (e.g., create deployments, run pods) to test queries. For example:
 ```
 kubectl create deployment example-pod --image=nginx
 ```
-
 This creates a simple Nginx pod in the default namespace.
 
 3. Start the FastAPI server:
@@ -206,7 +204,7 @@ Logs are written to `agent.log` for debugging and monitoring query processing.
 
 ## Troubleshooting Tips
 
-1. **Connection Issues**: Ensure Minikube is running and your kubeconfig is correctly set up:
+1. *Connection Issues*: Ensure Minikube is running and your kubeconfig is correctly set up:
 ```
 minikube start
 minikube status  # Should show "Running"
@@ -214,13 +212,13 @@ kubectl cluster-info  # Should show cluster information
 ```
 Be sure to check that the Kubernetes configuration file is located at `~/.kube/config`.
 
-2. Ensure the **FastAPI service** is running (via the command line):
+2. Ensure the *FastAPI service* is running (via the command line):
 ```
 curl -X POST "http://localhost:8000/health"
 ```
 
-3. **API Key errors**: Verify your OpenAI API key is correctly configured in the `.env` file.
-4. **Check logs**: Review the `agent.log` file to help diagnose issues if they persist. 
+3. *API Key errors*: Verify your OpenAI API key is correctly configured in the `.env` file.
+4. *Check logs*: Review the `agent.log` file to help diagnose issues if they persist. 
 
 ## License
 
